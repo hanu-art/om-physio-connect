@@ -18,9 +18,11 @@ import {
   Send
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useContact } from '@/hooks/useContact';
 
 const Contact = () => {
   const { toast } = useToast();
+  const { sendMessage, loading } = useContact();
   const [contactData, setContactData] = useState({
     name: '',
     email: '',
@@ -54,7 +56,7 @@ const Contact = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!contactData.name || !contactData.email || !contactData.message) {
@@ -65,18 +67,25 @@ const Contact = () => {
       return;
     }
 
-    toast({
-      title: "Message Sent Successfully!",
-      description: "We'll get back to you within 24 hours.",
-    });
+    try {
+      await sendMessage({
+        name: contactData.name,
+        email: contactData.email,
+        phone: contactData.phone || undefined,
+        subject: contactData.subject || 'General Inquiry',
+        message: contactData.message
+      });
 
-    setContactData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: ''
-    });
+      setContactData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: ''
+      });
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   return (
@@ -235,9 +244,9 @@ const Contact = () => {
                     />
                   </div>
 
-                  <Button type="submit" variant="hero" size="lg" className="w-full">
+                  <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
                     <Send className="mr-2 h-4 w-4" />
-                    Send Message
+                    {loading ? 'Sending...' : 'Send Message'}
                   </Button>
                 </form>
               </CardContent>

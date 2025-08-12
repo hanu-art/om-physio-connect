@@ -18,9 +18,11 @@ import {
   UserPlus
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useBloodDonation } from '@/hooks/useBloodDonation';
 
 const BloodDonation = () => {
   const { toast } = useToast();
+  const { registerDonor, loading } = useBloodDonation();
   const [registrationData, setRegistrationData] = useState({
     name: '',
     age: '',
@@ -28,7 +30,9 @@ const BloodDonation = () => {
     phone: '',
     email: '',
     address: '',
-    previousDonation: ''
+    previousDonation: '',
+    weight: '',
+    medicalConditions: ''
   });
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
@@ -75,10 +79,10 @@ const BloodDonation = () => {
     });
   };
 
-  const handleRegistration = (e: React.FormEvent) => {
+  const handleRegistration = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!registrationData.name || !registrationData.phone || !registrationData.bloodGroup || !registrationData.age) {
+    if (!registrationData.name || !registrationData.phone || !registrationData.bloodGroup || !registrationData.age || !registrationData.weight) {
       toast({
         title: "Please fill in all required fields",
         variant: "destructive"
@@ -86,20 +90,32 @@ const BloodDonation = () => {
       return;
     }
 
-    toast({
-      title: "Registration Successful!",
-      description: "Thank you for registering for blood donation. We'll contact you with camp details.",
-    });
+    try {
+      await registerDonor({
+        name: registrationData.name,
+        phone: registrationData.phone,
+        email: registrationData.email || undefined,
+        age: parseInt(registrationData.age),
+        blood_group: registrationData.bloodGroup,
+        weight: parseFloat(registrationData.weight),
+        last_donation_date: registrationData.previousDonation === 'never' ? undefined : undefined, // Could be enhanced to capture actual date
+        medical_conditions: registrationData.medicalConditions || undefined
+      });
 
-    setRegistrationData({
-      name: '',
-      age: '',
-      bloodGroup: '',
-      phone: '',
-      email: '',
-      address: '',
-      previousDonation: ''
-    });
+      setRegistrationData({
+        name: '',
+        age: '',
+        bloodGroup: '',
+        phone: '',
+        email: '',
+        address: '',
+        previousDonation: '',
+        weight: '',
+        medicalConditions: ''
+      });
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   return (
@@ -240,15 +256,31 @@ const BloodDonation = () => {
                       />
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Address</Label>
-                      <Input
-                        id="address"
-                        name="address"
-                        value={registrationData.address}
-                        onChange={handleInputChange}
-                        placeholder="Your complete address"
-                      />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="weight">Weight (kg) *</Label>
+                        <Input
+                          id="weight"
+                          name="weight"
+                          type="number"
+                          value={registrationData.weight}
+                          onChange={handleInputChange}
+                          placeholder="45-120"
+                          min="45"
+                          max="120"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <Input
+                          id="address"
+                          name="address"
+                          value={registrationData.address}
+                          onChange={handleInputChange}
+                          placeholder="Your complete address"
+                        />
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -266,9 +298,20 @@ const BloodDonation = () => {
                       </Select>
                     </div>
 
-                    <Button type="submit" variant="hero" size="lg" className="w-full">
+                    <div className="space-y-2">
+                      <Label htmlFor="medicalConditions">Medical Conditions</Label>
+                      <Input
+                        id="medicalConditions"
+                        name="medicalConditions"
+                        value={registrationData.medicalConditions}
+                        onChange={handleInputChange}
+                        placeholder="Any medical conditions or medications (optional)"
+                      />
+                    </div>
+
+                    <Button type="submit" variant="hero" size="lg" className="w-full" disabled={loading}>
                       <Heart className="mr-2 h-4 w-4" />
-                      Register as Blood Donor
+                      {loading ? 'Registering...' : 'Register as Blood Donor'}
                     </Button>
                   </form>
                 </CardContent>

@@ -7,9 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Phone, MapPin, CheckCircle, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAppointments } from '@/hooks/useAppointments';
 
 const Appointment = () => {
   const { toast } = useToast();
+  const { createAppointment, loading } = useAppointments();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -49,7 +51,7 @@ const Appointment = () => {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -61,22 +63,30 @@ const Appointment = () => {
       return;
     }
 
-    // Simulate form submission
-    toast({
-      title: "Appointment Requested Successfully!",
-      description: "We'll contact you within 2 hours to confirm your appointment.",
-    });
+    try {
+      await createAppointment({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        service: formData.service,
+        preferred_date: formData.preferredDate,
+        preferred_time: formData.preferredTime,
+        message: formData.message || undefined
+      });
 
-    // Reset form
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      service: '',
-      preferredDate: '',
-      preferredTime: '',
-      message: ''
-    });
+      // Reset form on success
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        service: '',
+        preferredDate: '',
+        preferredTime: '',
+        message: ''
+      });
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   const handleWhatsAppBooking = () => {
@@ -218,9 +228,9 @@ Please confirm my appointment. Thank you!`;
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-4">
-                      <Button type="submit" variant="hero" size="lg" className="flex-1">
+                      <Button type="submit" variant="hero" size="lg" className="flex-1" disabled={loading}>
                         <Calendar className="mr-2 h-4 w-4" />
-                        Request Appointment
+                        {loading ? 'Submitting...' : 'Request Appointment'}
                       </Button>
                       <Button 
                         type="button" 
